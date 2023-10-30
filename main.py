@@ -65,13 +65,15 @@ async def UserForGenre(genero: str):
         return {"message": "El género solicitado no está presente en los datos"}
 
     # Paso 1: Realizar un inner join entre genres_df y items_df usando 'item_id' como clave
-    merged_df = genres_df.merge(items_df, on='item_id', how='inner')
-
+    merged_df = items_df.merge(genres_df, on='item_id', how='inner')
     # Paso 2: Filtrar por el género deseado
-    filtered_df = merged_df[merged_df[genero] == 1]
-
+    merged_df = merged_df[merged_df[genero] == 1]
+    # Encuentra las columnas que no tienen todos sus valores iguales a 1
+    cols_to_remove = merged_df.columns[3:][~merged_df.iloc[:, 3:].eq(1).all()]
+    # Elimina esas columnas del DataFrame
+    merged_df = merged_df.drop(columns=cols_to_remove)
     # Paso 3: Realizar otro inner join con games_df usando 'item_id' como clave
-    final_df = filtered_df.merge(games_df, on='item_id', how='inner')
+    final_df = merged_df.merge(games_df, on='item_id', how='inner')
 
     # Paso 4: Calcular la suma de las horas jugadas por usuario y año
     user_year_playtime = final_df.groupby(['user_id', final_df['release_date']])['playtime_forever'].sum().reset_index()
