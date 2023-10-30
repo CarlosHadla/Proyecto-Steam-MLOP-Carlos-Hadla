@@ -66,30 +66,45 @@ def UserForGenre(genero: str):
     junto con una lista de la acumulación de horas jugadas por año.
     """
     if genero not in genres_df.columns:
-        no_Genre = ['El genero solicitado no esta presente en los datos']
-        return no_Genre
-    # Realizar un inner join entre genres_df y items_df usando 'id' como clave
-    merged_df = genres_df.merge(items_df, on='item_id', how='inner')
-    # Filtrar por el género deseado
-    filtered_df = merged_df[merged_df[genero] == 1]
-    # Realizar otro inner join con games_df usando 'id' como clave
-    final_df = filtered_df.merge(games_df, on='item_id', how='inner')
+        return {'message': 'El género solicitado no está presente en los datos'}
+
+    # Filtrar los datos de acuerdo al género solicitado
+    genre_data = genres_df[genres_df[genero] == 1]
+
+    if genre_data.empty:
+        return {'message': 'No hay juegos en el género especificado'}
+
+    # Realizar un inner join entre genre_data y items_df usando 'item_id' como clave
+    merged_df = genre_data.merge(items_df, on='item_id', how='inner')
+    
+    # Excluir el año 1900
+    merged_df = merged_df[merged_df['release_date'] != 1900]
+
+    if merged_df.empty:
+        return {'message': 'No hay datos disponibles para el año especificado'}
+
     # Calcular la suma de las horas jugadas por usuario y año
-    user_year_playtime = final_df.groupby(['user_id', final_df['release_date']])['playtime_forever'].sum().reset_index()
-    # Excluir el año 1900 de la suma de horas jugadas
-    user_year_playtime = user_year_playtime[user_year_playtime['release_date'] != 1900]
-    # Encontrar el usuario con más horas jugadas para el género
+    user_year_playtime = merged_df.groupby(['user_id', 'release_date'])['playtime_forever'].sum().reset_index()
+
+    if user_year_playtime.empty:
+        return {'message': 'No hay datos disponibles para el género especificado'}
+
+    # Encontrar el usuario con más horas jugadas
     user_with_most_playtime = user_year_playtime.groupby('user_id')['playtime_forever'].sum().idxmax()
+
     # Filtrar los datos del usuario con más horas jugadas
     user_most_playtime_data = user_year_playtime[user_year_playtime['user_id'] == user_with_most_playtime]
+
     # Crear una lista de acumulación de horas jugadas por año
     hours_played_by_year = [{'Año': year, 'Horas': playtime} for year, playtime in zip(user_most_playtime_data['release_date'], user_most_playtime_data['playtime_forever'])]
+
     # Devolver el resultado como un diccionario
     result = {
-        f"Usuario con más horas jugadas para Género {genero}": user_with_most_playtime,
-        "Horas jugadas": hours_played_by_year
+        f'Usuario con más horas jugadas para Género {genero}': user_with_most_playtime,
+        'Horas jugadas': hours_played_by_year
     }
     return result
+
 
 @app.get('/best_developer_year')
 def best_developer_year(anio: int):
