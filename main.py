@@ -35,13 +35,14 @@ def developer(desarrollador: str):
 def userdata(user_id: str):
     # Filtra los DataFrames para obtener datos del usuario especificado
     user_reviews = reviews_df[reviews_df["user_id"] == user_id]
+    games=games_df[games_df["price"] >= 0]
     if user_reviews.empty:
         return {"Error": f"Usuario con ID {user_id} no encontrado"}
     # Calcula la cantidad de dinero gastado
     dinero_gastado = 0
     for index, row in user_reviews.iterrows():
         game_id = row["item_id"]
-        game_info = games_df[games_df["item_id"] == game_id]
+        game_info = games[games["item_id"] == game_id]
         if not game_info.empty:
             precio = game_info.iloc[0]["price"]
             dinero_gastado += precio
